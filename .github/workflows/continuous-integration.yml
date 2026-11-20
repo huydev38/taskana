@@ -9,6 +9,11 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Optional tag override for manual run (e.g. v1.0.0-rc1 or test)'
+        required: false
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.repository }}/${{ github.ref }}
@@ -25,7 +30,7 @@ env:
 jobs:
   lint_backend:
     name: Lint and code quality
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     steps:
       - name: Check out source
@@ -46,7 +51,7 @@ jobs:
 
   test_backend:
     name: Unit and integration tests
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     steps:
       - name: Check out source
@@ -67,7 +72,7 @@ jobs:
 
   build_scan_publish:
     name: Build, scan, and publish tagged image
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     steps:
       - name: Check out source
@@ -108,7 +113,15 @@ jobs:
       - name: Set image name
         shell: bash
         run: |
-          echo "IMAGE_NAME=${{ env.DOCKERHUB_REPOSITORY }}:${{ github.ref_name }}" >> "$GITHUB_ENV"
+          if [[ -n "${{ inputs.image_tag }}" ]]; then
+            TAG="${{ inputs.image_tag }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${{ github.ref_name }}"
+          else
+            TAG="manual-${{ github.sha }}"
+          fi
+          echo "IMAGE_TAG=${TAG}" >> "$GITHUB_ENV"
+          echo "IMAGE_NAME=${{ env.DOCKERHUB_REPOSITORY }}:${TAG}" >> "$GITHUB_ENV"
 
       - name: Build Docker image
         uses: docker/build-push-action@v6
