@@ -95,21 +95,6 @@ jobs:
             exit 1
           fi
 
-      - name: Build executable JAR
-        run: >-
-          ./mvnw -B clean package
-          -pl :taskana-rest-spring-example-boot -am
-          -DskipTests
-          -Dcheckstyle.skip
-          -Dmaven.javadoc.skip=true
-
-      - name: Upload executable JAR artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: taskana-backend-${{ github.ref_name }}
-          path: rest/taskana-rest-spring-example-boot/target/taskana-rest-spring-example-boot.jar
-          if-no-files-found: error
-
       - name: Set image name
         shell: bash
         run: |
@@ -122,6 +107,21 @@ jobs:
           fi
           echo "IMAGE_TAG=${TAG}" >> "$GITHUB_ENV"
           echo "IMAGE_NAME=${{ env.DOCKERHUB_REPOSITORY }}:${TAG}" >> "$GITHUB_ENV"
+
+      - name: Build executable JAR
+        run: >-
+          ./mvnw -B clean package
+          -pl :taskana-rest-spring-example-boot -am
+          -DskipTests
+          -Dcheckstyle.skip
+          -Dmaven.javadoc.skip=true
+
+      - name: Upload executable JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: taskana-backend-${{ env.IMAGE_TAG }}
+          path: rest/taskana-rest-spring-example-boot/target/taskana-rest-spring-example-boot.jar
+          if-no-files-found: error
 
       - name: Build Docker image
         uses: docker/build-push-action@v6
