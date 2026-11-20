@@ -13,7 +13,7 @@
     <option name="workingDirectory" value="$PROJECT_DIR$/web" />
     <option name="textRange" />
     <option name="allNames" />
-    <option name="specsDir" value="$PROJECT_DIR$/web/cypress/integration" />
+    <option name="specsDir" value="$PROJECT_DIR$/taskana-web/cypress/integration" />
     <option name="specFile" />
     <option name="testName" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$/web" />

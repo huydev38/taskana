@@ -48,7 +48,7 @@ node_modules/
 
 # misc
 
-web/.angular/cache/
+taskana-web/.angular/cache/
 /.sass-cache
 /connect.lock
 /coverage
@@ -56,11 +56,11 @@ web/.angular/cache/
 npm-debug.log
 testem.log
 /typings
-/web/package-lock.json
+/taskana-web/package-lock.json
 
 # e2e
-/web/cypress/screenshots/
-/web/cypress/videos/
+/taskana-web/cypress/screenshots/
+/taskana-web/cypress/videos/
 
 # System Files
 .DS_Store

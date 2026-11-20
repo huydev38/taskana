@@ -68,15 +68,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-thymeleaf</artifactId>
     </dependency>
-    <!-- Since taskana-web packs its content in /static, we do not have
-        to unpack it again. However, when any local change has to be done to that
-        folder you have to copy target/classes/static manually from taskana-web. -->
-    <dependency>
-      <groupId>pro.taskana</groupId>
-      <artifactId>taskana-web</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <!-- test dependencies -->
     <dependency>
       <groupId>pro.taskana</groupId>

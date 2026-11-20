@@ -1,4 +1,0 @@
-{
-  "taskanaRestUrl": "http://localhost:8080/taskana/api",
-  "taskanaLogoutUrl": "http://localhost:8080/taskana/logout"
-}
