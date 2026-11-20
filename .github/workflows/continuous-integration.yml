@@ -7,13 +7,8 @@ on:
       - master
   push:
     tags:
-      - 'v*.*.*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
-    inputs:
-      image_tag:
-        description: 'Optional tag override for manual run (e.g. v1.0.0-rc1 or test)'
-        required: false
-        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.repository }}/${{ github.ref }}
@@ -26,6 +21,7 @@ env:
   JAVA_VERSION: '17'
   MAVEN_OPTS: '-Dmaven.repo.local=${{ github.workspace }}/.m2/repository'
   DOCKERHUB_REPOSITORY: 'huydev38/taskana-backend'
+  SONAR_HOST_URL: 'YOUR_SONARQUBE_URL'
 
 jobs:
   lint_backend:
@@ -43,11 +39,8 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      - name: Run Maven Checkstyle
-        run: >-
-          ./mvnw -B checkstyle:check
-          -pl :taskana-rest-spring-example-boot -am
-          -DskipTests
+      - name: Run Maven Checkstyle across the reactor
+        run: ./mvnw -B checkstyle:check -DskipTests
 
   test_backend:
     name: Unit and integration tests
@@ -64,15 +57,57 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      - name: Run backend verification
+      - name: Run the full backend reactor verification
+        run: ./mvnw -B verify -Dcheckstyle.skip
+
+  sonar_backend:
+    name: SonarQube analysis
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    needs:
+      - lint_backend
+      - test_backend
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Generate tests and coverage
+        run: ./mvnw -B verify -Dcheckstyle.skip
+
+      - name: Validate SonarQube configuration
+        shell: bash
+        run: |
+          if [[ "${{ env.SONAR_HOST_URL }}" == "YOUR_SONARQUBE_URL" ]]; then
+            echo "Set SONAR_HOST_URL and SONAR_PROJECT_KEY in the workflow/environment and add the SONAR_TOKEN secret."
+            exit 1
+          fi
+
+      - name: Run SonarQube analysis
+        env:
+          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >-
-          ./mvnw -B verify
-          -pl :taskana-rest-spring-example-boot -am
-          -Dcheckstyle.skip
+          ./mvnw -B sonar:sonar
+          -Dsonar.host.url=${{ env.SONAR_HOST_URL }}
+          -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+          -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+          -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+          -Dsonar.pullrequest.branch=${{ github.head_ref }}
+          -Dsonar.pullrequest.base=${{ github.base_ref }}
 
   build_scan_publish:
     name: Build, scan, and publish tagged image
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     steps:
       - name: Check out source
@@ -98,13 +133,7 @@ jobs:
       - name: Set image name
         shell: bash
         run: |
-          if [[ -n "${{ inputs.image_tag }}" ]]; then
-            TAG="${{ inputs.image_tag }}"
-          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            TAG="${{ github.ref_name }}"
-          else
-            TAG="manual-${{ github.sha }}"
-          fi
+          TAG="${{ github.ref_name }}"
           echo "IMAGE_TAG=${TAG}" >> "$GITHUB_ENV"
           echo "IMAGE_NAME=${{ env.DOCKERHUB_REPOSITORY }}:${TAG}" >> "$GITHUB_ENV"
 
@@ -133,7 +162,7 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}
 
       - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}
           format: 'table'
