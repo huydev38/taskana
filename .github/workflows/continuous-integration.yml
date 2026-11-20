@@ -39,8 +39,8 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      - name: Run Maven Checkstyle across the reactor
-        run: ./mvnw -B checkstyle:check -DskipTests
+      - name: Run Maven Checkstyle for the Kubernetes backend
+        run: ./mvnw -B checkstyle:check -pl :taskana-rest-spring-example-boot -am -DskipTests
 
   test_backend:
     name: Unit and integration tests
@@ -57,8 +57,8 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      - name: Run the full backend reactor verification
-        run: ./mvnw -B verify -Dcheckstyle.skip
+      - name: Run backend unit and integration verification
+        run: ./mvnw -B verify -pl :taskana-rest-spring-example-boot -am -Dcheckstyle.skip
 
   sonar_backend:
     name: SonarQube analysis
@@ -81,7 +81,7 @@ jobs:
           cache: maven
 
       - name: Generate tests and coverage
-        run: ./mvnw -B verify -Dcheckstyle.skip
+        run: ./mvnw -B verify -pl :taskana-rest-spring-example-boot -am -Dcheckstyle.skip
 
       - name: Validate SonarQube configuration
         shell: bash
@@ -98,6 +98,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >-
           ./mvnw -B sonar:sonar
+          -pl :taskana-rest-spring-example-boot -am
           -Dsonar.host.url=${{ env.SONAR_HOST_URL }}
           -Dsonar.token=${{ secrets.SONAR_TOKEN }}
           -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}

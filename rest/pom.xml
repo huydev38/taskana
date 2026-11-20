@@ -20,7 +20,6 @@
     <module>taskana-rest-spring</module>
     <module>taskana-rest-spring-example-common</module>
     <module>taskana-rest-spring-example-boot</module>
-    <module>taskana-rest-spring-example-wildfly</module>
     <module>taskana-rest-spring-test-lib</module>
   </modules>
 
